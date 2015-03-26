@@ -1,0 +1,8 @@
+﻿ffmpeg -f concat -i mylist.txt -c copy output.mp4
+
+mylist.txt (ANSI)
+------------------------------------
+file 'D:\FlashVideos\input_1.flv'
+file 'D:\FlashVideos\input_2.flv'
+file 'D:\FlashVideos\input_3.flv'
+------------------------------------

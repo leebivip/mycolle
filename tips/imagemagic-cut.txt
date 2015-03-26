@@ -1,0 +1,37 @@
+﻿
+用于文件名为 246-247.jpeg 形式的页面分割。右侧为 246 页，左侧为 247 页，请酌情修改
+
+@echo off
+prompt $g
+
+setlocal ENABLEDELAYEDEXPANSION
+
+set ex=..\identify.exe
+set co=..\convert.exe
+
+rem    pause
+
+for /l %%i in (12,2,326) do (
+rem    pause
+
+    set /a f1=%%i
+    set /a f2=f1+1
+    set fn=!f1!-!f2!.jpeg
+
+rem    echo !fn!
+rem    pause
+
+    for /f %%x in ('!ex! -format %%w !fn!') do set /a w=%%x
+    set /a w1=w/2
+    set /a w2=w-w1
+    for /f %%y in ('!ex! -format %%h !fn!') do set /a h=%%y
+
+    echo !fn! : !w1!x!h! - !w2!x!h!
+    !co! !fn! -crop !w1!x!h!+0+0 !f2!.jpg
+    !co! !fn! -crop !w2!x!h!+!w1!+0 !f1!.jpg
+
+    del !fn!
+rem    pause
+)
+
+pause

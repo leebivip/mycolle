@@ -1,0 +1,2 @@
+﻿MSVC 中命令行程序 wmain 支持通配符
+只要在链接器的输入里加入 wsetargv.obj 即可

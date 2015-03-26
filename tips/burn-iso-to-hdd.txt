@@ -1,0 +1,5 @@
+﻿
+Win7/8 类光盘镜像
+复制所有文件到移动硬盘的第一分区，对分区执行
+bootsect /nt60 x:
+bootsect /nt60 x: /mbr

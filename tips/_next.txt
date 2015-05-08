@@ -1,0 +1,24 @@
+﻿
+蓝屏自动重启等高级系统设置
+自动播放
+Windows Update 自动重启
+关闭 Windows Search
+关闭 Windows Time
+性能评估指数
+
+安装DTLite并修改设置
+安装WinRAR
+
+----------------------------------
+
+不安装(卸载)synaptics驱动
+关闭 Themes 服务
+关闭 volume* 服务
+cmd 的字体设置
+
+去掉宽带连接2等网络的名称
+
+----------------------------------
+
+安装一键ghost并打包
+打包时删除hiberfil和pagefile

@@ -4,16 +4,34 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace duptext
 {
     struct TextBlock
     {
-        public string src_hdr;
-        public string src_txt;
-        public string trans_hdr;
-        public string trans_txt;
+        public int order;
+        public string s_hdr;
+        public string s_txt;
+        public string t_hdr;
+        public string t_txt;
+    }
+
+    class TBComparer : IEqualityComparer<TextBlock>
+    {
+        public bool Equals(TextBlock x, TextBlock y)
+        {
+            if (object.ReferenceEquals(x, y)) return true;
+            if (object.ReferenceEquals(x, null) || object.ReferenceEquals(y, null)) return false;
+            return x.s_txt == y.s_txt;
+        }
+
+        public int GetHashCode(TextBlock obj)
+        {
+            if (object.ReferenceEquals(obj, null)) return 0;
+            return obj.s_txt.GetHashCode();
+        }
     }
 
     class Program
@@ -29,30 +47,32 @@ namespace duptext
                     int status = 0;
                     TextBlock tb = new TextBlock();
 
-                    while (true)
+                    for (int i = 0; ;)
                     {
                         var raw = sr.ReadLine();
+                        
                         switch (status)
                         {
                             case 0:
                                 if (Regex.IsMatch(raw, @"^○\d{4}○.*$"))
                                 {
-                                    tb.src_hdr = raw;
+                                    tb.s_hdr = raw;
                                     status = 1;
                                 }
                                 if (Regex.IsMatch(raw, @"^●\d{4}●.*$"))
                                 {
-                                    tb.trans_hdr = raw;
+                                    tb.t_hdr = raw;
                                     status = 2;
                                 }
                                 break;
                             case 1:
-                                tb.src_txt = raw;
+                                tb.s_txt = raw;
                                 status = 0;
                                 break;
                             case 2:
-                                tb.trans_txt = raw;
+                                tb.t_txt = raw;
                                 status = 0;
+                                tb.order = ++i;
                                 blocks.Add(tb);
                                 break;
                             default:
@@ -80,31 +100,42 @@ namespace duptext
 
             ////////////////////////////////////////
 
-            // 两个文本中匹配相同的原文，并复制译文
-            for (int i = 0, j = 0; i < dstf.Length; ++i)
-            // i : dstf index
-            // j : start index 必须从未匹配的地方开始，而不是从头开始。要保证文本的顺序
+            // 神 TM 没有 API 活不下去, diff 算法难成狗
+            var sameL_r = srcf.Intersect(dstf, new TBComparer());
+            var sameR_r = dstf.Intersect(srcf, new TBComparer());
+            var dstdiff = dstf.Except(sameR_r); // API 按有序集计算, 所以要提前算好差集
+
+            var sameL = sameL_r.OrderBy(x => x.order).OrderBy(x => x.s_txt).ToArray(); // 算出来的集合顺序不一样你敢信?
+            var sameR = sameR_r.OrderBy(x => x.order).OrderBy(x => x.s_txt).ToArray();
+
+            int match = 0;
+            int copy = 0;
+            for (int i = 0, k = 0; i < sameL.Length; ++i)
             {
-                for (int k = j; k < srcf.Length; ++k)
-                // k : srcf index
-                // k = j : 重新匹配前方内容没有意义
+                for (int j = k; j < sameR.Length; ++j)
                 {
-                    if (dstf[i].src_txt == srcf[k].src_txt)
+                    if(sameR[j].s_txt == sameL[i].s_txt)
                     {
-                        dstf[i].trans_txt = srcf[k].trans_txt;
-                        j = k; // 遇到匹配后更新下一组匹配的起始位置，否则继续从相同的地方开始搜索
-                        break; // 避免前后内容冲突
+                        ++match;
+                        if (sameR[j].t_txt != sameL[i].t_txt)
+                        {
+                            sameR[j].t_txt = sameL[i].t_txt;
+                            ++copy;
+                        }
+                        k = j;
+                        break;
                     }
                 }
             }
 
+            dstf = dstdiff.Union(sameR).OrderBy(x => x.order).ToArray();
             ////////////////////////////////////////
 
             var sb = new StringBuilder();
             foreach (var b in dstf)
             {
-                sb.AppendLine(b.src_hdr).AppendLine(b.src_txt)
-                    .AppendLine(b.trans_hdr).AppendLine(b.trans_txt)
+                sb.AppendLine(b.s_hdr).AppendLine(b.s_txt)
+                    .AppendLine(b.t_hdr).AppendLine(b.t_txt)
                     .AppendLine();
             }
             try
@@ -113,6 +144,8 @@ namespace duptext
                 { sw.Write(sb.ToString()); }
             }
             catch { Console.WriteLine("! " + args[1]); }
+
+            Console.WriteLine("setL: " + sameL.Length + " setR: " + sameR.Length + " match: " + match + " sync: " + copy);
         }
     }
 }

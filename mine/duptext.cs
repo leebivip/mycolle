@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace duptext
 {
-    struct transblock
+    struct TextBlock
     {
         public string src_hdr;
         public string src_txt;
@@ -18,16 +18,16 @@ namespace duptext
 
     class Program
     {
-        static transblock[] readfile(string p)
+        static TextBlock[] ReadFile(string p)
         {
-            var content = new List<transblock>();
+            var blocks = new List<TextBlock>();
 
             try
             {
                 using (var sr = new StreamReader(p, Encoding.Unicode, false))
                 {
                     int status = 0;
-                    transblock tb = new transblock();
+                    TextBlock tb = new TextBlock();
 
                     while (true)
                     {
@@ -53,7 +53,7 @@ namespace duptext
                             case 2:
                                 tb.trans_txt = raw;
                                 status = 0;
-                                content.Add(tb);
+                                blocks.Add(tb);
                                 break;
                             default:
                                 break;
@@ -64,7 +64,7 @@ namespace duptext
             }
             catch { Console.WriteLine("! " + p); }
 
-            return content.ToArray();
+            return blocks.ToArray();
         }
 
         static void Main(string[] args)
@@ -75,8 +75,8 @@ namespace duptext
                 return;
             }
 
-            var srcf = readfile(args[0]);
-            var dstf = readfile(args[1]);
+            var srcf = ReadFile(args[0]);
+            var dstf = ReadFile(args[1]);
 
             ////////////////////////////////////////
 
@@ -87,6 +87,7 @@ namespace duptext
             {
                 for (int k = j; k < srcf.Length; ++k)
                 // k : srcf index
+                // k = j : 重新匹配前方内容没有意义
                 {
                     if (dstf[i].src_txt == srcf[k].src_txt)
                     {

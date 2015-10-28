@@ -1,0 +1,42 @@
+﻿
+@rem 
+
+@echo off
+prompt $g
+
+setlocal ENABLEDELAYEDEXPANSION
+
+set ex=identify.exe
+set co=convert.exe
+
+rem    pause
+
+for  %%i in (*.tif) do (
+rem    pause
+
+    set fn=%%i
+rem this will remove leading zeros to prevent octal number
+    set /a fnd=1!fn:~-7,3!-1000
+    set /a f1=fnd*2+9000
+    set /a f2=fnd*2+9001
+
+rem    echo !fn! - !f1! - !f2!
+rem    pause
+
+    for /f %%x in ('!ex! -format %%w !fn!') do set /a w=%%x
+    set /a w1=w/2
+    set /a w2=w-w1
+    for /f %%y in ('!ex! -format %%h !fn!') do set /a h=%%y
+
+    echo !fn! : !f1! !w1!x!h! - !f2! !w2!x!h!
+
+rem    pause
+
+    !co! !fn! -crop "!w1!x!h!+0+0" !f2!.jpg
+    !co! !fn! -crop "!w2!x!h!+!w1!+0" !f1!.jpg
+
+    del !fn!
+rem    pause
+)
+
+pause

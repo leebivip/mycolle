@@ -1,0 +1,11 @@
+@echo off
+
+setlocal ENABLEDELAYEDEXPANSION
+
+for %%i in (*) do (
+  set tmpstr=%%i
+  echo !tmpstr:~-7!
+  ren "%%i" !tmpstr:~-7!
+)
+
+pause

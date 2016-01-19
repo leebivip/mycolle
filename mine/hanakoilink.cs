@@ -16,6 +16,21 @@ namespace hanairolink
     }
     class _FileLayer
     {
+        class PairsComp : IEqualityComparer<KeyValuePair<int, string>>
+        {
+            public bool Equals(KeyValuePair<int, string> x, KeyValuePair<int, string> y)
+            {
+                if (object.ReferenceEquals(x, y)) return true;
+                if (object.ReferenceEquals(x, null) || object.ReferenceEquals(y, null)) return false;
+                return x.Value == y.Value;
+            }
+
+            public int GetHashCode(KeyValuePair<int, string> obj)
+            {
+                if (object.ReferenceEquals(obj, null)) return 0;
+                return obj.Value.GetHashCode();
+            }
+        }
         _LayerContent content = new _LayerContent();
         public void Add(IEnumerable<string> pathlist)
         {
@@ -43,7 +58,7 @@ namespace hanairolink
                 }
                 catch
                 {
-                    Console.WriteLine(file);
+                    Console.WriteLine("Read\t" + file);
                 }
             }
         }
@@ -75,26 +90,38 @@ namespace hanairolink
             });
             return ret;
         }
-        public string Setup(string dstname)
+        public string Generate(string dstname)
         {
+            // 读取作为导入目标的文件
             var dstlines = dstname.ReadLinesAsFile(65001);
-            var srcpairs = GetPairs(Path.GetFileName(dstname).Replace("_BinOrder", "")).ToList();
             var dstpairs = new List<KeyValuePair<int, string>>();
 
             string pattern = @"^\[0x(?<label>.{8})\](?<text>.*)$";
 
-            foreach (var str in dstlines)
+            try
             {
-                var g = Regex.Match(str, pattern).Groups;
-                if (g.Count == 3) dstpairs.Add(new KeyValuePair<int, string>(int.Parse(g["label"].Value, System.Globalization.NumberStyles.HexNumber), g["text"].Value));
+                foreach (var str in dstlines)
+                {
+                    var g = Regex.Match(str, pattern).Groups;
+                    if (g.Count == 3) dstpairs.Add(new KeyValuePair<int, string>(int.Parse(g["label"].Value, System.Globalization.NumberStyles.HexNumber), g["text"].Value));
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Parse\t" + dstname);
+                Console.WriteLine();
+                return "";
             }
 
-            //////////////////////////////////
-            var srcpairsOrdered = new List<KeyValuePair<int, string>>();
+            // 获取最新版的译文
+            var srcpairs = GetPairs(Path.GetFileName(dstname).Replace("_BinOrder", "")).ToList();
+            var srcpairsLabeled = new List<KeyValuePair<int, string>>();
             for (int i = 0; i < srcpairs.Count; ++i)
-                srcpairsOrdered.Add(new KeyValuePair<int, string>(i, srcpairs[i].Key));
-            var srcmatched = srcpairsOrdered.Intersect(dstpairs, new PairsComp()).OrderBy(x => x.Value).ToList();
-            var dstmatched = dstpairs.Intersect(srcpairsOrdered, new PairsComp()).OrderBy(x => x.Value).ToList();
+                srcpairsLabeled.Add(new KeyValuePair<int, string>(i, srcpairs[i].Key));
+
+            // 导入译文
+            var srcmatched = srcpairsLabeled.Intersect(dstpairs, new PairsComp()).OrderBy(x => x.Value).ToList();
+            var dstmatched = dstpairs.Intersect(srcpairsLabeled, new PairsComp()).OrderBy(x => x.Value).ToList();
 
             var dstother = dstpairs.Except(dstmatched).ToList();
 
@@ -113,58 +140,51 @@ namespace hanairolink
 
             var newpairs = dstother.Union(dstmatched).OrderBy(x => x.Key).ToList();
 
-            ///////////////////////////////////
+            // 生成导入的文件
             if (dstpairs.Count != newpairs.Count)
                 Console.WriteLine(dstname + "match error");
 
             var sb = new StringBuilder();
+            var logsb = new StringBuilder();
+           
 
-            for(int i = 0; i < dstpairs.Count; ++i)
+            for (int i = 0; i < dstpairs.Count; ++i)
             {
-                sb.AppendLine(string.Format("[0x{0:x8}]{1}", dstpairs[i].Key, dstpairs[i].Value));
-                sb.AppendLine(string.Format(";[0x{0:x8}]{1}", newpairs[i].Key, newpairs[i].Value));
+                var dstval = dstpairs[i].Value;
+                sb.AppendLine(string.Format("[0x{0:x8}]{1}", dstpairs[i].Key, dstval));
+                var newval = newpairs[i].Value;
+                sb.AppendLine(string.Format(";[0x{0:x8}]{1}", newpairs[i].Key, newval));
                 sb.AppendLine();
+                if (dstval == newval && !Regex.IsMatch(dstval, @"^[0-9a-zA-Z_]+$"))
+                    logsb.AppendLine(string.Format("Check\t{0}\t{1:x8}\t{2}", Path.GetFileName(dstname), dstpairs[i].Key, dstval));
             }
+            Console.WriteLine(logsb.ToString());
 
             return sb.ToString();
         }
     }
-
-    class PairsComp : IEqualityComparer<KeyValuePair<int, string>>
-    {
-        public bool Equals(KeyValuePair<int, string> x, KeyValuePair<int, string> y)
-        {
-            if (object.ReferenceEquals(x, y)) return true;
-            if (object.ReferenceEquals(x, null) || object.ReferenceEquals(y, null)) return false;
-            return x.Value == y.Value;
-        }
-
-        public int GetHashCode(KeyValuePair<int, string> obj)
-        {
-            if (object.ReferenceEquals(obj, null)) return 0;
-            return obj.Value.GetHashCode();
-        }
-    }
-
+    
     class Program
     {
         static void Main(string[] args)
         {
-            if (args.Length < 2)
+            Console.OutputEncoding = Encoding.Unicode;
+            if (args.Length < 3)
             {
-                Console.WriteLine("hanairolink <target> <base> [<step1> ... <stepN>]");
+                Console.WriteLine("hanairolink <input> <step0> [<step1> ... <stepN>] <output>");
                 return;
             }
 
             var inlist = new List<string>();
-            for (int i = 1; i < args.Length; ++i)
+            for (int i = 1; i < args.Length - 1; ++i)
             { inlist.Add(args[i]); }
 
             var layer = new _FileLayer();
 
             layer.Add(inlist);
 
-            var str = layer.Setup(args[0]);
+            var str = layer.Generate(args[0]);
+            str.WriteToFile(args.Last());
         }
     }
 

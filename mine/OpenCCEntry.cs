@@ -7,8 +7,10 @@ namespace OpenCCEntry
     public class OpenCC
     {
         [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr opencc_open
-            ([MarshalAs(UnmanagedType.LPStr)] string configFileName);
+        private static extern IntPtr opencc_open([MarshalAs(UnmanagedType.LPStr)] string configFileName);
+
+        [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr opencc_open_w([MarshalAs(UnmanagedType.LPWStr)] string configFileName);
 
         [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int opencc_close(IntPtr opencc);
@@ -17,7 +19,7 @@ namespace OpenCCEntry
         private static extern unsafe int opencc_convert_utf8_to_buffer(IntPtr opencc, byte* input, int length, byte* output);
 
         [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern string opencc_error();
+        private static extern IntPtr opencc_error();
 
         private IntPtr openccInstance = new IntPtr(0);
         private int protectLength = 0;
@@ -29,10 +31,10 @@ namespace OpenCCEntry
         /// <param name="buffProtect">Prevent memory leak in unsafe code</param>
         public OpenCC(string configFileName = "opencc/s2t.json", int buffProtect = 2000)
         {
-            openccInstance = opencc_open(configFileName);
+            openccInstance = opencc_open_w(configFileName);
             protectLength = buffProtect;
             if (openccInstance == new IntPtr(-1))
-                throw new Exception("Create OpenCC Engine Failed");
+                throw new Exception(Marshal.PtrToStringAnsi(opencc_error()));
         }
 
         ~OpenCC()
@@ -54,7 +56,7 @@ namespace OpenCCEntry
             fixed (byte* ptr = src, optr = dst)
             { resultLength = opencc_convert_utf8_to_buffer(openccInstance, ptr, src.Length, optr); }
             if (resultLength == -1)
-                throw new Exception("Conversion Failed");
+                throw new Exception(Marshal.PtrToStringAnsi(opencc_error()));
 
             return Encoding.UTF8.GetString(dst, 0, resultLength);
         }

@@ -6,19 +6,22 @@ namespace OpenCCEntry
 {
     public class OpenCC
     {
-        [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
+        private const string OpenCCLoc = "opencc/opencc.dll";
+        private const string DefaultConfig = "opencc/s2t.json";
+
+        [DllImport(OpenCCLoc, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr opencc_open([MarshalAs(UnmanagedType.LPStr)] string configFileName);
 
-        [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(OpenCCLoc, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr opencc_open_w([MarshalAs(UnmanagedType.LPWStr)] string configFileName);
 
-        [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(OpenCCLoc, CallingConvention = CallingConvention.Cdecl)]
         private static extern int opencc_close(IntPtr opencc);
 
-        [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(OpenCCLoc, CallingConvention = CallingConvention.Cdecl)]
         private static extern unsafe int opencc_convert_utf8_to_buffer(IntPtr opencc, byte* input, int length, byte* output);
 
-        [DllImport("opencc/opencc.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(OpenCCLoc, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr opencc_error();
 
         private IntPtr openccInstance = new IntPtr(0);
@@ -29,7 +32,7 @@ namespace OpenCCEntry
         /// </summary>
         /// <param name="configFileName">Location of configuration file</param>
         /// <param name="buffProtect">Prevent memory leak in unsafe code</param>
-        public OpenCC(string configFileName = "opencc/s2t.json", int buffProtect = 2000)
+        public OpenCC(string configFileName = DefaultConfig, int buffProtect = 2000)
         {
             openccInstance = opencc_open_w(configFileName);
             protectLength = buffProtect;

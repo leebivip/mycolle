@@ -4,6 +4,10 @@ using System.Text;
 
 namespace OpenCCEntry
 {
+    /// <summary>
+    /// C# Interface to an OpenCC instance
+    /// Will create a new OpenCC instance
+    /// </summary>
     public class OpenCC
     {
         private const string OpenCCLoc = "opencc/opencc.dll";
@@ -40,6 +44,9 @@ namespace OpenCCEntry
                 throw new Exception(Marshal.PtrToStringAnsi(opencc_error()));
         }
 
+        /// <summary>
+        /// Close the OpenCC instance when dispose
+        /// </summary>
         ~OpenCC()
         {
             opencc_close(openccInstance);

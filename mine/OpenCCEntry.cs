@@ -5,8 +5,8 @@ using System.Text;
 namespace OpenCCEntry
 {
     /// <summary>
-    /// C# Interface to an OpenCC instance
-    /// Will create a new OpenCC instance
+    /// C# Interface to an OpenCC instance.
+    /// Will create a new OpenCC instance.
     /// </summary>
     public class OpenCC
     {
@@ -32,10 +32,10 @@ namespace OpenCCEntry
         private int protectLength = 0;
 
         /// <summary>
-        /// Create a new instance of OpenCC converter
+        /// Create a new instance of OpenCC converter.
         /// </summary>
-        /// <param name="configFileName">Location of configuration file</param>
-        /// <param name="buffProtect">Prevent memory leak in unsafe code</param>
+        /// <param name="configFileName">Location of configuration file.</param>
+        /// <param name="buffProtect">Prevent memory leak in unsafe code.</param>
         public OpenCC(string configFileName = DefaultConfig, int buffProtect = 2000)
         {
             openccInstance = opencc_open_w(configFileName);
@@ -45,7 +45,7 @@ namespace OpenCCEntry
         }
 
         /// <summary>
-        /// Close the OpenCC instance when dispose
+        /// Close the OpenCC instance when dispose.
         /// </summary>
         ~OpenCC()
         {
@@ -53,10 +53,10 @@ namespace OpenCCEntry
         }
 
         /// <summary>
-        /// Convert string content using OpenCC converter
+        /// Convert string content using OpenCC converter.
         /// </summary>
-        /// <param name="input">Source string</param>
-        /// <returns>Convert Result</returns>
+        /// <param name="input">Source string.</param>
+        /// <returns>Convert Result.</returns>
         unsafe public string Convert(string input)
         {
             var src = Encoding.UTF8.GetBytes(input);
